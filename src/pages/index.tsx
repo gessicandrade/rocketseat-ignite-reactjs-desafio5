@@ -1,6 +1,8 @@
 import { GetStaticProps } from 'next';
 import Head from "next/head";
+import Link from 'next/link';
 
+// import { getPrismicClient } from '../services/prismic';
 import { getPrismicClient } from '../services/prismic';
 
 import commonStyles from '../styles/common.module.scss';
@@ -25,7 +27,9 @@ interface HomeProps {
   postsPagination: PostPagination;
 }
 
-export default function Home() {
+export default function Home({posts}) {
+  console.log(posts);
+  
   return (
     <>
       <Head>
@@ -34,30 +38,18 @@ export default function Home() {
 
       <main className={styles.container}>
         <div className={styles.posts}>
-          <a>
-            <strong>Como utilizar Hooks</strong>
-            <p>Pensando em sincronização em vez de ciclos de vida.</p>
-            <div className={styles.info}>
-              <span><img src="/images/calendar.png" alt="icone de calendário" /> 15 Mar 2021</span>
-              <span><img src="/images/user.png" alt="icone de usuário" /> Joseph Oliveira</span>
-            </div>
-          </a>
-          <a>
-            <strong>Como utilizar Hooks</strong>
-            <p>Tudo sobre como criar a sua primeira aplicação utilizando Create React App</p>
-            <div className={styles.info}>
-              <span><img src="/images/calendar.png" alt="icone de calendário" /> 15 Mar 2021</span>
-              <span><img src="/images/user.png" alt="icone de usuário" /> Joseph Oliveira</span>
-            </div>
-          </a>
-          <a>
-            <strong>Como utilizar Hooks</strong>
-            <p>Pensando em sincronização em vez de ciclos de vida.</p>
-            <div className={styles.info}>
-              <span><img src="/images/calendar.png" alt="icone de calendário" /> 15 Mar 2021</span>
-              <span><img src="/images/user.png" alt="icone de usuário" /> Joseph Oliveira</span>
-            </div>
-          </a>
+          {posts.map(post => (
+            <Link href={`/post/${post.slug}`} key={post.slug}>
+            <a>
+              <strong>{post.title}</strong>
+              <p>{post.excerpt}</p>
+              <div className={styles.info}>
+                <span><img src="/images/calendar.png" alt="icone de calendário" /> {post.updatedAt}</span>
+                <span><img src="/images/user.png" alt="icone de usuário" /> {post.author}</span>
+              </div>
+            </a>
+            </Link>
+          ))}
           <a className={styles.readmore}>Carregar mais posts</a>
         </div>
       </main>
@@ -71,3 +63,33 @@ export default function Home() {
 
 //   // TODO
 // };
+
+export async function getStaticProps({ params, previewData }) {
+  // console.log(previewData);
+  
+  const client = getPrismicClient({ previewData })
+
+  // const page = await client.getByUID('page', params.uid)
+  const response = await client.getAllByType('post')
+  // console.log(response);
+
+  const posts = response.map(post => {
+    return {
+      slug: post.uid,
+      title: post.data.title,
+      excerpt: post.data.subtitle,
+      content: post.data.content,
+      banner: post.data.banner,
+      author: post.data.author,
+      updatedAt: new Date(post.last_publication_date).toLocaleDateString('pt-BR', {
+        day: '2-digit',
+        month: 'long',
+        year: 'numeric'
+      })
+    }   
+  })
+
+  return {
+    props: { posts },
+  }
+}

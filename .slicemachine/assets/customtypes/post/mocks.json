@@ -1,0 +1,41 @@
+{
+  "id": "9b6b07d5-95e0-45f4-a249-ca28c06ad11a",
+  "uid": "aut-unde-odit",
+  "type": "post",
+  "data": {
+    "title": "incentivize visionary e-commerce",
+    "subtitle": "syndicate transparent platforms",
+    "author": "incentivize B2B synergies",
+    "banner": {
+      "dimensions": {
+        "width": 900,
+        "height": 500
+      },
+      "alt": "Placeholder image",
+      "copyright": null,
+      "url": "https://images.unsplash.com/photo-1589321578146-4c1ba445cc88?w=900&h=500&fit=crop"
+    },
+    "content": [
+      {
+        "heading": "redefine plug-and-play infrastructures",
+        "body": [
+          {
+            "type": "paragraph",
+            "text": "Do eiusmod dolor deserunt ipsum eiusmod anim exercitation cillum veniam exercitation duis.",
+            "spans": []
+          }
+        ]
+      },
+      {
+        "heading": "matrix rich methodologies",
+        "body": [
+          {
+            "type": "paragraph",
+            "text": "Quis anim ad et occaecat eu ea. Cupidatat minim minim laborum nisi aliqua tempor aliquip ut in veniam. Velit Lorem est Lorem veniam est.",
+            "spans": []
+          }
+        ]
+      }
+    ]
+  }
+}

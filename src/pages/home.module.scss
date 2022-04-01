@@ -12,6 +12,7 @@
         display: block;
         cursor: pointer;
         color: var(--heading);
+        text-decoration: none;
 
         & + a {
             margin-top: 1rem;

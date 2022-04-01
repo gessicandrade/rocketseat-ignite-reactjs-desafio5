@@ -1,10 +1,13 @@
 import { GetStaticPaths, GetStaticProps } from 'next';
 import Head from "next/head";
 
-import { getPrismicClient } from '../../services/prismic';
+import { getPrismicClient, linkResolver } from '../../services/prismic';
+import * as prismicH from '@prismicio/helpers';
+import * as prismic from '@prismicio/client'
 
 import commonStyles from '../../styles/common.module.scss';
 import styles from './post.module.scss';
+import { PrismicRichText, PrismicText } from '@prismicio/react';
 
 interface Post {
   first_publication_date: string | null;
@@ -14,6 +17,8 @@ interface Post {
       url: string;
     };
     author: string;
+    updatedAt: string;
+    ago: string;
     content: {
       heading: string;
       body: {
@@ -27,65 +32,34 @@ interface PostProps {
   post: Post;
 }
 
-export default function Post() {
+export default function Post({post}:PostProps) {
+  
   return (
     <>
       <Head>
-        <title>Posts | Spacetraveling | Criando um app CRA do zero</title>
+        <title>Posts | Spacetraveling | {post.data.title}</title>
       </Head>
 
       <div className={styles.banner}>
-        <img src="/images/banner-sample.png" alt="banner do post" />
+        <img src={post.data.banner.url} alt='banner' />
       </div>
       <div className={styles.content}>
-        <h1 className={styles.title}>Criando um app CRA do zero</h1>
+        <h1 className={styles.title}>{post.data.heading}</h1>
         
         <div className={styles.info}>
-          <span><img src="/images/calendar.png" alt="icone de calendário" /> 15 Mar 2021</span>
-          <span><img src="/images/user.png" alt="icone de usuário" /> Joseph Oliveira</span>
-          <span><img src="/images/clock.png" alt="icone de relógio" /> 4 min</span>
+          <span><img src="/images/calendar.png" alt="icone de calendário" /> {post.data.updatedAt}</span>
+          <span><img src="/images/user.png" alt="icone de usuário" /> {post.data.author}</span>
+          <span><img src="/images/clock.png" alt="icone de relógio" /> {post.data.ago}</span>
         </div>
 
 
         <div className={styles.postContent}>
-          <h2>Proin et varius</h2>
-
-          <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit.</p>
-          <p>Nullam dolor sapien, vulputate eu diam at, condimentum hendrerit tellus. Nam facilisis sodales felis, pharetra pharetra lectus auctor sed.</p>
-          <p>Ut venenatis mauris vel libero pretium, et pretium ligula faucibus. Morbi nibh felis, elementum a posuere et, vulputate et erat. Nam venenatis.</p>
-          
-          <h2>Cras laoreet mi</h2>
-
-          <p>
-            Nulla auctor sit amet quam vitae commodo. Sed risus justo, vulputate quis neque eget, dictum sodales sem. 
-            In eget felis finibus, mattis magna a, efficitur ex. Curabitur vitae justo consequat sapien gravida auctor a non risus. 
-            Sed malesuada mauris nec orci congue, interdum efficitur urna dignissim. Vivamus cursus elit sem, 
-            vel facilisis nulla pretium consectetur. <strong>Nunc congue</strong>.
-          </p>
-
-          <p>
-            Class aptent taciti sociosqu ad litora torquent per conubia nostra, per inceptos himenaeos. 
-            Aliquam consectetur massa nec metus condimentum, sed tincidunt enim tincidunt. 
-            Vestibulum fringilla risus sit amet massa suscipit eleifend. Duis eget metus cursus, suscipit ante ac, iaculis est. 
-            Donec accumsan enim sit amet lorem placerat, eu dapibus ex porta. Etiam a est in leo pulvinar auctor. 
-            Praesent sed vestibulum elit, consectetur egestas libero.
-          </p>
-
-          <p>
-            Ut varius quis velit sed cursus. Nunc libero ante, hendrerit eget consectetur vel, viverra quis lectus. 
-            Sed vulputate id quam nec tristique. <a href="#">Etiam lorem purus</a>, imperdiet et porta in, placerat non turpis. 
-            Cras pharetra nibh eu libero ullamcorper, at convallis orci egestas. Fusce ut est tellus. 
-            Donec ac consectetur magna, nec facilisis enim. Sed vel tortor consectetur, facilisis felis non, accumsan risus. 
-            Integer vel nibh et turpis.
-          </p>
-
-          <p>Nam eu sollicitudin neque, vel blandit dui. Aliquam luctus aliquet ligula, sed:</p>
-
-          <ul>
-            <li>
-              Suspendisse ac facilisis leo. Sed nulla odio, aliquam ut lobortis vitae, viverra quis risus. Vivamus pulvinar enim sit amet elit porttitor bibendum. Nulla facilisi. Aliquam libero libero, porta ac justo vitae, dapibus convallis sapien. Praesent a nibh pretium, ultrices urna eget, vulputate felis. Phasellus ac sagittis ipsum, a congue lectus. Integer interdum ut velit vehicula volutpat. Nulla facilisi. Nulla rhoncus metus lorem, sit amet facilisis ipsum faucibus et. Lorem ipsum.
-            </li>
-          </ul>
+          {post.data.content.map(content => (
+            <div key={content.heading+new Date()}>
+              <h2>{content.heading}</h2>
+              <PrismicRichText field={content.body.text} />
+            </div>
+          ))}
         </div>
 
       </div>
@@ -93,16 +67,79 @@ export default function Post() {
   )
 }
 
-// export const getStaticPaths = async () => {
-//   const prismic = getPrismicClient();
-//   const posts = await prismic.query(TODO);
+export const getStaticPaths: GetStaticPaths = async () => {
+  const client = getPrismicClient();
+  // const posts = await client.getAllByType('post')
+  const posts = await client.query(
+    [prismic.predicates.at('document.type', 'post')],
+    {
+      fetch: [],
+      pageSize: 100,
+    }
+  )
+  // const paths = posts.map((post) => ({
+  //   params: { 
+  //     slug: post.uid,
+  //   },
+  // }))
+  
+  // return { paths, fallback: false }
+  return {
+    paths: posts.results.map(post => ({
+      params: { slug: post.uid },
+    })),
+    fallback: true,
+  }
+};
 
-//   // TODO
-// };
+export const getStaticProps = async context => {
+  const client = getPrismicClient();
+  const uid = context.params.slug
+  const response = await client.getByUID<any>('post', uid) || {}
 
-// export const getStaticProps = async context => {
-//   const prismic = getPrismicClient();
-//   const response = await prismic.getByUID(TODO);
-
-//   // TODO
-// };
+  const date1 = new Date(response.last_publication_date).getTime();
+  const date2 = new Date().getTime();
+  const diffTimes = Math.abs(date1 - date2)
+  const diffMinutes = Math.floor(diffTimes / 60000)
+  const diffHours = Math.floor(diffMinutes / 60)
+  const diffDays = Math.floor(diffHours / 24)
+  let ago = `${diffMinutes} min`
+  
+  if (diffMinutes < 60) {
+    ago = `${diffMinutes} min`
+  } else if (diffHours < 24) {
+    ago = `${diffHours} hrs`
+  } else {
+    ago = `${diffDays} dias`
+  }
+  
+  const post = {
+    first_publication_date: new Date(response.first_publication_date).toLocaleDateString('pt-BR', {
+      day: '2-digit',
+      month: 'long',
+      year: 'numeric'
+    }),
+    data: {
+      author: response.data.author,
+      banner: {
+        url: response.data.banner.url
+      },
+      content: {
+        body: {
+          spans: [],
+          text: prismicH.asHTML(response.data.content.body) 
+        }
+      },
+      heading: response.data.title,
+      slug: response.uid,
+      excerpt: response.data.subtitle,
+      updatedAt: new Date(response.last_publication_date).toLocaleDateString('pt-BR', {
+        day: '2-digit',
+        month: 'long',
+        year: 'numeric'
+      }),
+      ago: ago
+    }
+  }
+  return { props: { post } }
+};
