@@ -1,5 +1,5 @@
 import { GetStaticProps } from 'next';
-import Header from '../components/Header';
+import Head from "next/head";
 
 import { getPrismicClient } from '../services/prismic';
 
@@ -28,17 +28,37 @@ interface HomeProps {
 export default function Home() {
   return (
     <>
-      <Header />
+      <Head>
+        <title>Posts | Spacetraveling</title>
+      </Head>
+
       <main className={styles.container}>
         <div className={styles.posts}>
           <a>
             <strong>Como utilizar Hooks</strong>
             <p>Pensando em sincronização em vez de ciclos de vida.</p>
-            <div>
-              <time>15 Mar 2021</time>
-              <span>Joseph Oliveira</span>
+            <div className={styles.info}>
+              <span><img src="/images/calendar.png" alt="icone de calendário" /> 15 Mar 2021</span>
+              <span><img src="/images/user.png" alt="icone de usuário" /> Joseph Oliveira</span>
             </div>
           </a>
+          <a>
+            <strong>Como utilizar Hooks</strong>
+            <p>Tudo sobre como criar a sua primeira aplicação utilizando Create React App</p>
+            <div className={styles.info}>
+              <span><img src="/images/calendar.png" alt="icone de calendário" /> 15 Mar 2021</span>
+              <span><img src="/images/user.png" alt="icone de usuário" /> Joseph Oliveira</span>
+            </div>
+          </a>
+          <a>
+            <strong>Como utilizar Hooks</strong>
+            <p>Pensando em sincronização em vez de ciclos de vida.</p>
+            <div className={styles.info}>
+              <span><img src="/images/calendar.png" alt="icone de calendário" /> 15 Mar 2021</span>
+              <span><img src="/images/user.png" alt="icone de usuário" /> Joseph Oliveira</span>
+            </div>
+          </a>
+          <a className={styles.readmore}>Carregar mais posts</a>
         </div>
       </main>
     </>
