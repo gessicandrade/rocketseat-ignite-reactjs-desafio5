@@ -1,28 +1,41 @@
 import { GetStaticPaths, GetStaticProps } from 'next';
-import Head from "next/head";
+import Link from 'next/link';
+import { useRouter } from 'next/router';
 
-import { getPrismicClient, linkResolver } from '../../services/prismic';
-import * as prismicH from '@prismicio/helpers';
-import * as prismic from '@prismicio/client'
+import { RichText } from 'prismic-dom';
+import Prismic from '@prismicio/client';
+
+import { format } from 'date-fns';
+import ptBR from 'date-fns/locale/pt-BR';
+
+import { FiCalendar, FiUser, FiClock } from 'react-icons/fi';
+
+import Header from '../../components/Header';
+// import { Comments } from '../../components/Coments';
+
+import { getPrismicClient } from '../../services/prismic';
 
 import commonStyles from '../../styles/common.module.scss';
 import styles from './post.module.scss';
-import { PrismicRichText, PrismicText } from '@prismicio/react';
+import Head from 'next/head';
+import { useState } from 'react';
 
 interface Post {
   first_publication_date: string | null;
+  last_publication_date: string | null;
+  uid: string;
   data: {
+    uid: string;
     title: string;
     banner: {
       url: string;
     };
     author: string;
-    updatedAt: string;
-    ago: string;
     content: {
       heading: string;
       body: {
         text: string;
+        type: string;
       }[];
     }[];
   };
@@ -30,10 +43,38 @@ interface Post {
 
 interface PostProps {
   post: Post;
+  prevPost: Post | undefined;
+  nextPost: Post | undefined;
 }
 
-export default function Post({post}:PostProps) {
-  
+export default function Post({ post, nextPost, prevPost }: PostProps) {
+
+  // function readTime() {
+  //   const date1 = new Date(post.last_publication_date).getTime();
+  //   const date2 = new Date().getTime();
+  //   const diffTimes = Math.abs(date1 - date2)
+  //   const diffMinutes = Math.floor(diffTimes / 60000)
+  //   // const diffHours = Math.floor(diffMinutes / 60)
+  //   // const diffDays = Math.floor(diffHours / 24)
+  //   // let ago = ''
+  //   // if (diffMinutes < 60) {
+  //   //   ago = `${diffMinutes} min`
+  //   // } else if (diffHours < 24) {
+  //   //   ago = `${diffHours} min`
+  //   // } else {
+  //   //   ago = `${diffDays} min`
+  //   // }
+
+  //   return `${diffMinutes} min`;
+
+  // };
+
+  const router = useRouter();
+
+  if (router.isFallback) {
+    return <p>Carregando...</p>;
+  }
+
   return (
     <>
       <Head>
@@ -44,20 +85,34 @@ export default function Post({post}:PostProps) {
         <img src={post.data.banner.url} alt='banner' />
       </div>
       <div className={styles.content}>
-        <h1 className={styles.title}>{post.data.heading}</h1>
+        <h1 className={styles.title}>{post.data.title}</h1>
         
         <div className={styles.info}>
-          <span><img src="/images/calendar.png" alt="icone de calendário" /> {post.data.updatedAt}</span>
-          <span><img src="/images/user.png" alt="icone de usuário" /> {post.data.author}</span>
-          <span><img src="/images/clock.png" alt="icone de relógio" /> {post.data.ago}</span>
+          <span>
+            <FiCalendar size={20} />  
+            { format(new Date(post.first_publication_date), 'dd MMM yyyy', { locale: ptBR }) }
+          </span>
+          <span><FiUser size={20} /> {post.data.author}</span>
+          <span><FiClock size={20} /> 4 min</span>
         </div>
 
 
         <div className={styles.postContent}>
+          {/* {post.data.content} */}
           {post.data.content.map(content => (
-            <div key={content.heading+new Date()}>
+            <div key={content?.heading}>
               <h2>{content.heading}</h2>
-              <PrismicRichText field={content.body.text} />
+              {content.body.map((body, index) => {
+                const key = index;
+
+                return body.type === 'list-item' ? (
+                  <ul key={key}>
+                    <li>{body.text}</li>
+                  </ul>
+                ) : (
+                  <p key={key}>{body.text}</p>
+                );
+              })}
             </div>
           ))}
         </div>
@@ -68,78 +123,83 @@ export default function Post({post}:PostProps) {
 }
 
 export const getStaticPaths: GetStaticPaths = async () => {
-  const client = getPrismicClient();
-  // const posts = await client.getAllByType('post')
-  const posts = await client.query(
-    [prismic.predicates.at('document.type', 'post')],
+  const prismic = getPrismicClient();
+  const postsResponse = await prismic.query(
+    [Prismic.predicates.at('document.type', 'post')],
     {
-      fetch: [],
-      pageSize: 100,
+      fetch: ['post.title', 'post.subtitle', 'post.author'],
     }
-  )
-  // const paths = posts.map((post) => ({
-  //   params: { 
-  //     slug: post.uid,
-  //   },
-  // }))
-  
-  // return { paths, fallback: false }
+  );
+
+  const slugs = postsResponse.results.map(slug => slug.uid);
+
   return {
-    paths: posts.results.map(post => ({
-      params: { slug: post.uid },
-    })),
+    paths: slugs.map(slug => {
+      return {
+        params: { slug },
+      };
+    }),
     fallback: true,
-  }
+  };
 };
 
-export const getStaticProps = async context => {
-  const client = getPrismicClient();
-  const uid = context.params.slug
-  const response = await client.getByUID<any>('post', uid) || {}
+export const getStaticProps: GetStaticProps = async ({ params }) => {
+  const { slug } = params;
 
-  const date1 = new Date(response.last_publication_date).getTime();
-  const date2 = new Date().getTime();
-  const diffTimes = Math.abs(date1 - date2)
-  const diffMinutes = Math.floor(diffTimes / 60000)
-  const diffHours = Math.floor(diffMinutes / 60)
-  const diffDays = Math.floor(diffHours / 24)
-  let ago = `${diffMinutes} min`
-  
-  if (diffMinutes < 60) {
-    ago = `${diffMinutes} min`
-  } else if (diffHours < 24) {
-    ago = `${diffHours} hrs`
-  } else {
-    ago = `${diffDays} dias`
-  }
-  
-  const post = {
-    first_publication_date: new Date(response.first_publication_date).toLocaleDateString('pt-BR', {
-      day: '2-digit',
-      month: 'long',
-      year: 'numeric'
-    }),
-    data: {
-      author: response.data.author,
-      banner: {
-        url: response.data.banner.url
-      },
-      content: {
-        body: {
-          spans: [],
-          text: prismicH.asHTML(response.data.content.body) 
-        }
-      },
-      heading: response.data.title,
-      slug: response.uid,
-      excerpt: response.data.subtitle,
-      updatedAt: new Date(response.last_publication_date).toLocaleDateString('pt-BR', {
-        day: '2-digit',
-        month: 'long',
-        year: 'numeric'
-      }),
-      ago: ago
+  const prismic = getPrismicClient();
+  const response = await prismic.getByUID('post', String(slug), {});
+
+  const nextPost = await prismic.query(
+    [Prismic.Predicates.at('document.type', 'post')],
+    {
+      pageSize: 1,
+      after: `${response.id}`,
+      orderings: '[document.first_publication_date]',
     }
-  }
-  return { props: { post } }
+  );
+
+  const prevPost = await prismic.query(
+    [Prismic.Predicates.at('document.type', 'post')],
+    {
+      pageSize: 1,
+      after: `${response.id}`,
+      orderings: '[document.first_publication_date desc]',
+    }
+  );
+
+  const post = {
+    uid: response.uid,
+    first_publication_date: response.first_publication_date,
+    last_publication_date: response.last_publication_date,
+    data: {
+      title: response.data.title,
+      subtitle: response.data.subtitle,
+      banner: {
+        url: response.data.banner.url,
+      },
+      author: response.data.author,
+      // content: RichText.asHtml(response.data.content)
+      content: response.data.content.map(content => {
+        return {
+          heading: content.heading,
+          body: content.body.map(body => {
+            return {
+              text: body.text,
+              type: body.type,
+              spans: [...body.spans],
+            };
+          }),
+        };
+      }),
+    },
+  };
+
+  return {
+    props: {
+      post,
+      prevPost: prevPost?.results[0] || null,
+      nextPost: nextPost?.results[0] || null
+    },
+    revalidate: 3600, // 1 hour
+  };
 };

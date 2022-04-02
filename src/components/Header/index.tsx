@@ -5,7 +5,7 @@ export default function Header() {
   return (
     <div className={styles.header}>
       <div className={styles.content}>
-        <Link href="/"><img src="/images/logo.png" alt="logo" /></Link>
+        <Link href="/"><a><img src="/images/logo.png" alt="logo" /></a></Link>
       </div>
     </div>
   );

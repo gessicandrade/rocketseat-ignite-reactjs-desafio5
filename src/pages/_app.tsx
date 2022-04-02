@@ -12,20 +12,6 @@ function MyApp({ Component, pageProps }: AppProps): JSX.Element {
       <Header />
       <Component {...pageProps} />
     </>
-    // <PrismicProvider
-    //   linkResolver={linkResolver}
-    //   internalLinkComponent={({ href, children, ...props }) => (
-    //     <Link href={href}>
-    //       <a {...props}>
-    //         {children}
-    //       </a>
-    //     </Link>
-    //   )}
-    // >
-    //   <PrismicPreview repositoryName={repositoryName}>
-    //     <Component {...pageProps} />
-    //   </PrismicPreview>
-    // </PrismicProvider>
   );
 }
 
